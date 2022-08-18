@@ -1,0 +1,3375 @@
+swagger: '2.0'
+#x-samples-enabled: false
+#x-explorer-enabled: false
+info:
+  version: 1.2.7
+  title: 'mydeposits - Developer API'
+  description: 'API services to automate Deposit Protection within your existing Property Management Software workflows and applications for both England & Wales, and also Scotland'
+  contact:
+    name: mydeposits API Support
+    email: api@mydeposits.co.uk
+
+#############################
+#
+# Change Log
+#
+# 1.2.7 - Added new E&W Insurance/Custodial landlord search endpoint
+#         Added new E&W Insurance/Custodial property search endpoint
+# 1.2.6 - Basepath reviewed
+# 1.2.5 - Added option to prevent checkout comms being sent
+#         Added new E&W Custodial resend verification email endpoint
+#         Added new E&W Custodial get tenancy incoming payments endpoint
+# 1.2.4 - Added custom certificate downloads for E&W Custodial & Insurance
+# 1.2.3 - Added Insurance renew tenancy details
+#         Updated Insurance Unprotect details
+# 1.2.2 - Added details on hashing release APIs
+# 1.2.1 - Added additional Insurance validation and services
+#         Added Scotland validation rules for tenancy registration
+# 1.2   - End of Tenancy APIs
+# 1.1   - Amended Member Creation APIs
+# 1.0   - Initial YAML file
+#
+#############################
+
+tags:
+- name: "Global Services"
+  description: "Global API utilities and lookup functionality"
+- name: "Authentication Services"
+  description: "Authentication and OAuth2 token management services"
+- name: "Member Account Services"
+  description: "Creation and management of Member records within mydeposits"
+- name: "Tenancy Services"
+  description: "Creation and management of Tenancy records within mydeposits"
+- name: "Property Services"
+  description: "Creation and management of Property records within mydeposits"
+- name: "Landlord Services"
+  description: "Creation and management of Landlord entities owned by members within mydeposits"
+- name: "Batch Services"
+  description: "Creation and management of Custodial Batch / Basket entities within mydeposits"
+paths:
+  /v1/protectionregions:
+    get:
+      tags:
+      - "Global Services"
+      summary: "List of regions served by mydeposits"
+      operationId: ProtectionRegions_Get
+      responses:
+        200:
+          description: "List of available Deposit Protection Regions"
+          schema:
+            type: array
+            items:
+              type: string
+  /v1/{region}/protectionschemes:
+    get:
+      tags:
+      - "Global Services"
+      summary: "List of available Deposit Protection Schemes within this region"
+      operationId: ProtectionSchemes_Get
+      produces:
+      - "application/json"
+      parameters:
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "List of available Deposit Protection Schemes within this region"
+          schema:
+            type: array
+            items:
+              type: string
+  /v1/{scheme}/{region}/schemerules:
+    get:
+      tags:
+      - "Global Services"
+      summary: "Returns a link to the Scheme Rules for this scheme and region"
+      operationId: SchemeRules_Get
+      produces:
+      - "application/json"
+      parameters:
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.SchemeRules'
+  /v1/{scheme}/{region}/token:
+    post:
+      tags:
+      - "Authentication Services"
+      summary: "Request a token for a given member"
+      operationId: Token_Create
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Token'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/authorize:
+    get:
+      tags:
+      - "Authentication Services"
+      summary: "Request authorisation for a given member"
+      operationId: Authorisation_Create
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              url:
+                type: string
+                description: URL of the requested scheme rules
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member:
+    post:
+      tags:
+      - "Member Account Services"
+      summary: "Create a new member account record"
+      operationId: "addMember"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "value"
+        in: "body"
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.LandlordMember'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.LandlordMember'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/subscribe:
+    post:
+      tags:
+      - "Member Account Services"
+      summary: "Subscribe a member to the specified scheme"
+      operationId: "subscribeMember"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "value"
+        in: "body"
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Subscribe'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/resendverificationemail:
+    post:
+      tags:
+      - "Member Account Services"
+      summary: "Resend verification email to member"
+      operationId: "Member_ResendEmail"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/branch/{id}:
+    get:
+      tags:
+      - "Member Account Services"
+      summary: "Request details for a given branch under the member's account"
+      operationId: Member_BranchGet
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ''
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.BranchDetails'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+    put:
+      tags:
+        - Member Account Services
+      summary: Update an existing branch
+      operationId: Member_BranchPut
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: Branch ID
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        description: Models.Branch
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Branch'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Branch'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/branches:
+    get:
+      tags:
+      - "Member Account Services"
+      summary: "Request all branches for a given corporate landlord or agent member"
+      operationId: Member_BranchList
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.BranchList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/branch:
+    post:
+      tags:
+      - "Member Account Services"
+      summary: "Create a new branch under a corporate landlord or agent member's account record"
+      operationId: "Member_BranchCreate"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "value"
+        in: "body"
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Branch'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.Branch'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/account/payment/detail:
+    post:
+      tags:
+      - "Member Account Services"
+      summary: "Custodial only - Add repayment details under a member account record"
+      operationId: "Member_PaymentDetailsCreate"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "value"
+        in: "body"
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.PaymentDetail'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.PaymentDetail'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/account/payment/{id}/default:
+    post:
+      tags:
+      - "Member Account Services"
+      summary: "Custodial only - Set the default repayment details for the member's account"
+      operationId: "Member_PaymentDetailsDefault"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: 'ID of the payment details record that is to become the default payment object'
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.DefaultPayment'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/member/account/payment/details:
+    get:
+      tags:
+      - "Member Account Services"
+      summary: "Custodial only - Request all stored UK repayment details for a given member"
+      operationId: Member_PaymentDetailsGet
+      consumes: []
+      produces:
+      - "application/json"
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.PaymentDetailsList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/landlord/{id}:
+    get:
+      tags:
+        - Landlord Services
+      summary: Retrieve landlord entity details for a landlord under a specified mydeposits member account
+      operationId: Landlord_Get
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: Landlord ID
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.LandlordDetails'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+    put:
+      tags:
+        - Landlord Services
+      summary: Update a landlord entity within a specified mydeposits member account
+      operationId: Landlord_Put
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: Landlord ID
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        description: Models.Landlord
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Landlord'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Landlord'    
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/landlord/search:
+    get:
+      tags:
+        - Landlord Services
+      summary: Retrieve landlord entity details for landlords matching the specified search criteria under a specified mydeposits member account
+      operationId: Landlord_Search
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "searchstring"
+        in: "query"
+        description: |
+                      The text you wish to search for. This should be url encoded.
+                      q=xxx
+        required: false
+        type: "string"
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.LandlordList'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/landlord:
+    post:
+      tags:
+        - Landlord Services
+      summary: "Create new landlord entity within a specified mydeposits member account"
+      description: "Allows creation of a new landlord entity within mydeposits. This record can be used when creating a new tenancy record."
+      operationId: Landlord_Post
+      consumes:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - in: body
+        name: body
+        description: "The landlord object that needs to be added to the agent account"
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Landlord'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.Landlord'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/property/{id}:
+    get:
+      tags:
+        - Property Services
+      summary: Return all information for this property
+      operationId: Property_Get
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: Property ID
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.PropertyDetails'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+    put:
+      tags:
+        - Property Services
+      summary: Update an existing property
+      operationId: Property_Put
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: Property ID
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        description: Models.Property
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Property'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Property'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/property/search:
+    get:
+      tags:
+        - Property Services
+      summary: Retrieve property entity details for properties matching the specified search criteria under a specified mydeposits member account
+      operationId: Property_Search
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: "searchstring"
+        in: "query"
+        description: |
+                      The text you wish to search for. This should be url encoded.
+                      q=xxx
+        required: false
+        type: "string"
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.PropertiesList'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/property:
+    post:
+      tags:
+      - Property Services
+      summary: Create a new property record within a specified mydeposits member account
+      description: Allows creation of a new property record within the mydeposits member account for the chosen scheme and region.
+      operationId: Property_Post
+      consumes:
+      - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - in: body
+        name: body
+        description: Property entity to be created
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Property'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.Property'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}:
+    get:
+      tags:
+        - Tenancy Services
+      summary: Retrieve details of a tenancy
+      operationId: Tenancy_Get
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ''
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.TenancyDetails'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancies:
+    get:
+      tags:
+        - Tenancy Services
+      summary: Retrieve a list of all tenancies underneath an account
+      operationId: Tenancy_GetList
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.ProtectionList'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy:
+    post:
+      tags:
+      - Tenancy Services
+      summary: Create new tenancy record within a specified mydeposits member account
+      description: Allows creation of a new tenancy record within the mydeposits member account for the chosen scheme and region.
+      operationId: Tenancy_Post
+      consumes:
+      - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - in: body
+        name: body
+        description: Tenancy object that needs adding to the members account
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Tenancy'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.Tenancy'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/checkout:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Checkout a tenancy deposit protection"
+      operationId: Tenancy_Checkout
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Checkout'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Checkout'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/incomingpayments:
+    get:
+      tags:
+        - Tenancy Services
+      summary: "Return incoming payments for a tenancy"
+      operationId: Tenancy_IncomingPayments
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.IncomingPayment'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/depositprotection:
+    get:
+      tags:
+        - Tenancy Services
+      summary: Retrieve deposit protection PDF
+      operationId: Tenancy_Certificate
+      consumes: []
+      produces:
+        - application/pdf
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: file
+        '400':
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/depositprotection/custom:
+    get:
+      tags:
+        - Tenancy Services
+      summary: Retrieve deposit protection PDF - E & W only
+      operationId: Tenancy_CustomCertificate
+      consumes: []
+      produces:
+        - application/pdf
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: file
+        '400':
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/otp:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Request a One Time Password to initiate or respond to a release"
+      operationId: Tenancy_UnprotectOTP
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.OTP'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/renew:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Submit a request to initiate a deposit renewal"
+      operationId: Tenancy_Renew
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Renew'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Renew'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/unprotect:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Submit a request to initiate a deposit release"
+      operationId: Tenancy_Unprotect
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: hmac-Signature
+        in: header
+        description: |
+          Only needed for Custodial
+          Hashed request body (HMAC-SHA512)
+          Hashing key = (OTP/Private key) + TenancyID
+          e.g. OTP = '123', TenancyID = 456 - Hashing key = 123456
+        required: true
+        type: string
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Unprotect'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Unprotect'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/unprotect/counter:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Custodial only - Submit a counter offer to a tenant's release request"
+      operationId: Tenancy_UnprotectCounter
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: hmac-Signature
+        in: header
+        description: |
+          Hashed request body (HMAC-SHA512)
+          Hashing key = (OTP/Private key) + TenancyID
+          e.g. OTP = '123', TenancyID = 456 - Hashing key = 123456
+        required: true
+        type: string
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Unprotect'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Unprotect'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/unprotect/accept:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Custodial only - Accept a tenant's deposit release request"
+      operationId: Tenancy_UnprotectAccept
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: hmac-Signature
+        in: header
+        description: |
+          Hashed request body (HMAC-SHA512)
+          Hashing key = (OTP/Private key) + TenancyID
+          e.g. OTP = '123', TenancyID = 456 - Hashing key = 123456
+        required: true
+        type: string
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.UnprotectAccept'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.Unprotect'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/tenancy/{id}/convertspt:
+    post:
+      tags:
+        - Tenancy Services
+      summary: "Insurance only - Convert a live protection to a statutory periodic tenancy"
+      operationId: Tenancy_UnprotectSPT
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Tenancy resource
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.ConvertSPT'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/batch/{id}:
+    get:
+      tags:
+        - Batch Services
+      summary: Retrieve batch entity details for a batch under a specified mydeposits member account
+      operationId: Batch_Get
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Batch resource
+        required: true
+        type: integer
+        format: int64
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.BatchDetails'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/batches:
+    get:
+      tags:
+        - Batch Services
+      summary: Retrieve a list of all batches underneath an account
+      operationId: Batch_GetList
+      consumes: []
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.BatchList'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/batch:
+    post:
+      tags:
+        - Batch Services
+      summary: Create new batch entity within a specified mydeposits Custodial account
+      description: Allows creation of a new batch entity within mydeposits. This entity can be used to group tenancies together for a single payment.
+      operationId: Batch_Post
+      consumes:
+        - application/json
+      parameters:
+      - name: "scheme"
+        in: "path"
+        description: "ID of the selected deposit protection Scheme as returned by protectionschemes method."
+        required: true
+        type: "string"
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - in: body
+        name: body
+        description: The batch object that needs to be added to the member's account
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Batch'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/API.Responses.Batch'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/batch/{id}/checkout:
+    post:
+      tags:
+        - Batch Services
+      summary: "Checkout a batch containing tenancy deposit protections"
+      operationId: Batch_Checkout
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Batch resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.Checkout'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.BatchCheckout'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+  /v1/{scheme}/{region}/batch/{id}/tenancy:
+    post:
+      tags:
+        - Batch Services
+      summary: "Add a tenancy deposit protection to an existing batch"
+      operationId: Batch_AddTenancy
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+      - name: scheme
+        in: path
+        description: ID of the selected deposit protection Scheme as returned by protectionschemes method.
+        required: true
+        type: string
+      - name: "region"
+        in: "path"
+        description: "ID of the selected deposit protection Region as returned by protectionregions method."
+        required: true
+        type: "string"
+      - name: id
+        in: path
+        description: ID of the Batch resource
+        required: true
+        type: integer
+        format: int64
+      - name: value
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/API.Models.BatchAddTenancy'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/API.Responses.BatchAddTenancy'
+        400:
+          description: Any validation errors
+          schema:
+            $ref: '#/definitions/API.Responses.ErrorList'
+      security:
+      - mydeposits_accessCode:
+        - write:mydeposits
+        - read:mydeposits
+definitions:
+  API.Models.LandlordMember:
+    description: Model for a new landlord member
+    required:
+      - landlordType
+      - title
+      - firstName
+      - lastName
+      - addressLine1
+      - postcode
+      - countryCode
+      - emailAddress
+    type: object
+    properties:
+      landlordType:
+        description: Private / Corporate
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: Must be 50 characters or less
+        type: string
+      lastName:
+        description: Must be 50 characters or less
+        type: string
+      addressLine1:
+        description: Must be 100 characters or less
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 90 characters or less
+        type: string
+      addressLine4:
+        description: Must be 80 characters or less
+        type: string
+      postcode:
+        description: Must be 8 characters or less
+        type: string
+      countryCode:
+        description: This is required for Custodial, and must be GB for Insurance
+        type: string
+      companyName:
+        description: |
+          Required for corporate landlords
+          Must be 100 characters or less
+        type: string
+      companyRegistrationNumber:
+        description: Must be 15 characters or less
+        type: string
+      registeredAddressLine1:
+        description: |
+          Required for Insurance corporate landlords only
+          Must be 100 characters or less
+        type: string
+      registeredAddressLine2:
+        description: Must be 100 characters or less
+        type: string
+      registeredAddressLine3:
+        description: Must be 100 characters or less
+        type: string
+      registeredPostcode:
+        description: |
+          Required for Insurance corporate landlords only
+          Must be 8 characters or less
+        type: string
+      homeTelephone:
+        description: |
+          Private landlords - must provide either a home or mobile phone number
+          Corporate landlords (Custodial) - must provide either a home or mobile phone number
+          Must be 15 characters or less
+        type: string
+      mobileTelephone:
+        description: |
+          Private landlords - must provide either a home or mobile phone number
+          Corporate landlords (Custodial) - must provide either a home or mobile phone number
+          Corporate landlords (Insurance) - must provide either a work or mobile phone number
+          Must be 15 characters or less
+        type: string
+      workTelephone:
+        description: |
+          Corporate landlords (Insurance) - must provide either a work or mobile phone number
+          Must be 15 characters or less
+        type: string
+      branchTelephone:
+        description: |
+          For Custodial corporate landlords only - must provide a branch phone number
+          Must be 15 characters or less
+        type: string      
+      emailAddress:
+        description: Must be 100 characters or less
+        type: string
+      workEmailAddress:
+        description: |
+          Required for Corporate Custodial members only.
+          ust be 255 characters or less
+        type: string
+      dateOfBirth:
+        description: |
+          Required for private landlords (E&W Insurance + Custodial) and for corporate landlords (E&W Custodial only).
+          Must be at least 16 years old to join the scheme.
+          Must be in the format dd/mm/yyyy.
+          Must be 10 characters
+        type: string
+  API.Models.Subscribe:
+    description: Model for a new member scheme subscription
+    required:
+      - schemeRulesAccepted
+    type: object
+    properties:
+      schemeRulesAccepted:
+        description: Must be 'true' to subscribe to the scheme by accepting its Terms and Conditions
+        type: string
+  API.Models.Landlord:
+    description: Landlord model used to create or update landlord entities within a member account
+    required:
+      - landlordType
+      - title
+      - firstName
+      - lastName
+      - addressLine1
+      - postcode
+    type: object
+    properties:
+      landlordType:
+        description: |
+          Whether this is a private or corporate landlord
+          (CORPORATE / PRIVATE)
+        type: string      
+      thirdPartyReference:
+        description: Your unique reference for this property. Must be 25 characters or less
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: |
+          The first name for either a private landlord, or the primary contact of a corporate landlord.
+          Must be 50 characters or less
+        type: string
+      lastName:
+        description: |
+          The last name for either a private landlord, or the primary contact of a corporate landlord.
+          Must be 50 characters or less
+        type: string
+      addressLine1:
+        description: |
+          Mandatory for Insurance and Scotland. Only mandatory for Custodial if address is to be supplied in request.
+          Must be 100 characters or less
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 90 characters or less
+        type: string
+      addressLine4:
+        description: Must be 80 characters or less
+        type: string
+      postcode:
+        description: |
+          Mandatory for Insurance only and Scotland. Only mandatory for Custodial if address is to be supplied in request. 
+          Must be 8 characters or less
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      companyName:
+        description: |
+          Required for corporate landlords.
+          Must be 100 characters or less
+        type: string
+      companyRegistrationNumber:
+        description: Must be 15 characters or less
+        type: string
+      registeredAddressLine1:
+        description: |
+          This must be populated if there is a company name.  
+          Required for corporate landlords for Insurance only.
+          Must be 100 characters or less
+        type: string
+      registeredAddressLine2:
+        description: |
+          Required for corporate landlords for Insurance only.
+          Must be 100 characters or less
+        type: string
+      registeredAddressLine3:
+        description: |
+          Required for corporate landlords for Insurance only.
+          Must be 100 characters or less
+        type: string
+      registeredPostcode:
+        description: |
+          Required for corporate landlords for Insurance only.
+          This must be populated if there is a company name.
+          Must be 8 characters or less
+        type: string
+      homeTelephone:
+        description: Must be between 10 and 15 characters if provided
+        type: string
+      mobileTelephone:
+        description: |
+          Email address or mobile is mandatory.
+          Must be between 10 and 15 characters if provided
+        type: string
+      workTelephone:
+        description: Must be between 10 and 15 characters if provided
+        type: string
+      emailAddress:
+        description: |
+          Email address or mobile is mandatory.
+          Must be 100 characters or less
+        type: string
+      branchID:
+        description: Branch ID if the landlord belongs to a branch
+        type: string
+  API.Models.Property:
+    description: Property model used to create or update property objects
+    required:
+      - addressLine1
+      - postcode
+    type: object
+    properties:
+      thirdPartyReference:
+        description: |
+          Your unique reference for this property. 
+          Must be 25 characters or less
+        type: string
+      addressLine1:
+        description: Must be 100 characters or less
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 90 characters or less
+        type: string
+      addressLine4:
+        description: Must be 80 characters or less
+        type: string
+      postcode:
+        description: Must be 8 characters or less
+        type: string
+      propertyType:
+        $ref: '#/definitions/PropertyType'
+      localAuthority:
+        $ref: '#/definitions/LocalAuthorityRegion'
+      landlordID:
+        description: |
+          ID of the landlord that the property belongs to.
+          Mandatory for Insurance agent members only
+        type: string
+      branchID:
+        description: Branch ID if the landlord belongs to a branch rather than a head office
+        type: string
+  API.Models.Checkout:
+    required:
+      - paymentMethod
+    type: object
+    properties:
+      paymentMethod:
+        description: "Must be BANK_TRANSFER"
+        type: string
+      preventComms:
+        description: "'true' if checkout comms are not to be sent"
+        type: string
+  API.Models.UnprotectAccept:
+    description: Tenancy model used to accept a deposit release request
+    required:
+      - tenancyEndDate
+      - keyType
+    type: object
+    properties:
+      tenancyEndDate:
+        type: string
+        description: The date the tenant vacated the property (dd/mm/yyyy)
+      keyType:
+        type: string
+        description: Either OTP (online portals) or PRIVATE_KEY (PMS software)
+  API.Models.Unprotect:
+    description: Tenancy model used to initiate or counter a deposit release request
+    required:
+      - tenancyEndDate
+      - keyType
+      - paymentMethod
+    type: object
+    properties:
+      tenancyEndDate:
+        type: string
+        description: The date the tenant vacated the property (dd/mm/yyyy)
+      keyType:
+        type: string
+        description: Either OTP (online portals) or PRIVATE_KEY (PMS software)
+      deductions:
+        $ref: '#/definitions/API.Models.UnprotectionDeductions'
+  API.Models.UnprotectionDeductions:
+    description: Deductions requested for a deposit release request. Only needed if deductions are to be made
+    required:
+      - deduction
+      - paymentMethod
+      - defaultPaymentID
+    type: object
+    properties:
+      paymentMethod:
+        type: string
+        description: Must be CHEQUE or BACS
+      defaultPaymentID:
+        type: string
+        description: Only needed for BACS payments
+      deduction:
+        type: array
+        items:
+          $ref: '#/definitions/API.Models.Deductions'
+  API.Models.Deductions:
+    description: A single deduction for a deposit release request
+    required:
+      - deductionReason
+      - deductionAmount
+    type: object
+    properties:
+      deductionReason:
+        $ref: '#/definitions/DeductionReasons'
+      deductionAmount:
+        type: string
+        description: The amount you wish to deduct for this deduction reason
+  API.Models.Renew:
+    description: Tenancy model used to renew a deposit
+    required:
+      - depositAmount
+      - annualRentalAmount
+      - tenancyStartDate
+      - tenancyEndDate
+    type: object
+    properties:
+      depositAmount:
+        description: |
+          Value of the deposit, up to 2 decimal places<br>Maximum value for Insurance: 16666.67
+        type: string
+      tenancyStartDate:
+        type: string
+        description: The date the tenant vacated the property (dd/mm/yyyy)
+      tenancyEndDate:
+        type: string
+        description: The date the tenant vacated the property (dd/mm/yyyy)
+      annualRentalAmount:
+        description: Manadtory for Insurance and Custodial. The annual rental amount of the tenancy in pounds
+        type: string
+      inDispute:
+        description: |
+          Only needed if outside the fixed term AST dates.
+          Must be "No"
+        type: string
+      courtProceedings:
+        description: |
+          Only needed if outside the fixed term AST dates. 
+          Must be "no"
+        type: string
+      section8Or21:
+        description: |
+          Only needed if outside the fixed term AST dates. 
+          Must be "no"
+        type: string
+      tenantVacatedProperty:
+        description: |
+          Only needed if outside the fixed term AST dates. 
+          Must be "no"
+        type: string
+  API.Models.Tenancy:
+    description: Tenancy model used to register a new tenancy deposit
+    required:
+      - depositHolder
+      - depositAmount
+      - dateDepositPaid
+      - tenancyStartDate
+      - tenancyEndDate
+      - landlordID
+      - propertyID
+      - leadTenant
+      - tenancyType
+      - annualRentalAmount
+    type: object
+    properties:
+      thirdPartyReference:
+        description: Your reference for this tenancy. This should be unique across the member's account. Must be 40 characters or less
+        type: string
+      branchID:
+        description: |
+          The mydeposits ID for the agent's branch that the landlord belongs to
+          Only needed for agent accounts
+        type: string
+      depositHolder:
+        description: Agent / Landlord (required for Insurance only)
+        type: string
+      depositAmount:
+        description: |
+          Value of the deposit, up to 2 decimal places<br>Maximum value for Insurance: 16666.67
+          Maximum value for Scotland: 99999.00
+        type: string
+      depositCapOverride: 
+        description: |
+          Allow the member to override the 5 week deposit cap limit for the stated annual rent and deposit amount
+          'true' if override is needed, otherwise omit from request
+        type: string
+      dateDepositPaid:
+        description: The date that the tenant paid the deposit (dd/MM/yyyy)
+        type: string
+      tenancyStartDate:
+        description: The start date of the tenancy (dd/MM/yyyy)
+        type: string
+      tenancyEndDate:
+        description: The end date of the tenancy, must be after the start date (dd/MM/yyyy)
+        type: string
+      tenancyType:
+        $ref: '#/definitions/TenancyType'
+      annualRentalAmount:
+        description: Manadtory for Insurance and Custodial. The annual rental amount of the tenancy in pounds
+        type: string
+      landlordID:
+        description: The mydeposits landlord ID for landlord owning the property
+        type: string
+      landlordRegistrationNumber:
+        description: 'Scotland Custodial only, the landlord''s registration number given by the local authority the property resides in'
+        type: string
+      propertyID:
+        description: The mydeposits ID of the property this tenancy refers to
+        type: string
+      leadTenant:
+        $ref: '#/definitions/API.Models.Tenant'
+      jointTenants:
+        description: All additional tenants
+        type: array
+        items:
+          $ref: '#/definitions/API.Models.JointTenant'
+      interestedParty:
+        $ref: '#/definitions/API.Models.InterestedParty'
+  API.Models.Tenant:
+    description: Details of the lead tenant in a tenancy
+    required:
+      - title
+      - firstName
+      - lastName
+      - addressLine1
+      - postcode
+      - countryCode
+      - emailAddress
+    type: object
+    properties:
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: Must be 30 characters or less
+        type: string
+      lastName:
+        description: Must be 30 characters or less
+        type: string
+      addressLine1:
+        description: Must be 100 characters or less
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 90 characters or less
+        type: string
+      addressLine4:
+        description: Must be 80 characters or less
+        type: string
+      postcode:
+        description: Must be 8 characters or less
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      homeTelephone:
+        description: |
+          Must provide either a home, mobile or work phone number
+          Must be 15 characters or less
+        type: string
+      workTelephone:
+        description: |
+          Must provide either a home, mobile or work phone number
+          Must be 15 characters or less
+        type: string
+      mobileTelephone:
+        description: |
+          Must provide either an email address or a mobile phone number
+          Must provide either a home, mobile or work phone number
+          Must be 15 characters or less
+        type: string
+      emailAddress:
+        description: |
+          Must provide either an email address or mobile phone number
+          Must be 100 characters or less
+        type: string
+  API.Models.JointTenant:
+    description: 'Joint tenant details, when there is more than a single tenant in a tenancy'
+    required:
+      - title
+      - firstName
+      - lastName
+      - emailAddress
+    type: object
+    properties:
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: Must be 30 characters or less
+        type: string
+      lastName:
+        description: Must be 30 characters or less
+        type: string
+      workTelephone:
+        description: |
+          Work telephone number.
+          Must be 15 characters or less
+        type: string
+      mobileTelephone:
+        description: |
+          Mobile telephone number.
+          Must be 15 characters or less
+        type: string
+      homeTelephone:
+        description: |
+          Home telephone number
+          Must be 15 characters or less
+        type: string
+      emailAddress:
+        description: |
+          Must be 100 characters or less.
+          Mandatory for Custodial
+        type: string
+      addressLine1:
+        description: |
+          Must be 100 characters or less.
+          Mandatory for Custodial
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 100 characters or less
+        type: string
+      addressLine4:
+        description: Must be 100 characters or less
+        type: string
+      postcode:
+        description: |
+          Must be 8 characters or less.
+          Mandatory for Custodial
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+  API.Models.InterestedParty:
+    description: Details of an interested party that has a registered claim in the deposit
+    required:
+      - title
+      - firstName
+      - lastName
+      - emailAddress
+      - addressLine1
+      - postcode
+      - countryCode
+    type: object
+    properties:
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: Must be 50 characters or less
+        type: string
+      lastName:
+        description: Must be 50 characters or less
+        type: string
+      companyName:
+        description: Must be 50 characters or less
+        type: string
+      addressLine1:
+        description: Must be 100 characters or less
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 100 characters or less
+        type: string
+      addressLine4:
+        description: Must be 100 characters or less
+        type: string
+      postcode:
+        description: Must be 8 characters or less
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      homeTelephone:
+        description: |
+          Home telephone number. 
+          Must be 15 characters or less
+        type: string
+      workTelephone:
+        description: |
+          Work telephone number.
+          Must be 15 characters or less
+        type: string
+      mobileTelephone:
+        description: |
+          Mobile telephone number. 
+          Must be 15 characters or less
+        type: string
+      emailAddress:
+        description: |
+          Must be 255 characters or less.
+          Mandatory for Custodial only
+        type: string
+  API.Models.Batch:
+    description: Details of the new requested batch
+    required:
+      - batchName
+    type: object
+    properties:
+      batchName:
+        description: Must be 50 characters or less
+        type: string
+  API.Models.BatchAddTenancy:
+    description: Details of which tenancy to add to a given batch
+    required:
+      - tenancyID
+    type: object
+    properties:
+      tenancyID:
+        description: Must be 50 characters or less
+        type: string
+  API.Models.PaymentDetail:
+    description: An object holding information on how a deposit should be repaid to a member
+    required:
+      - beneficiaryName
+      - bankAccountNumber
+      - bankSortCode
+    type: object
+    properties:
+      beneficiaryName:
+        description: The name on the bank account, must be 75 characters or less
+        type: string
+      bankAccountNumber:
+        description: Must be an 8 digit number
+        type: string
+      bankSortCode:
+        description: Must be a 6 digit number
+        type: string
+  API.Models.Branch:
+    description: Details of an branch for a corporate landlord or agent member
+    required:
+      - thirdPartyReference
+      - branchName
+      - addressLine1
+      - postcode
+      - emailAddress
+      - branchTelephone
+    type: object
+    properties:
+      branchName:
+        description: Must be 50 characters or less
+        type: string
+      parentBranchID :
+        description: Must be 50 characters or less
+        type: string
+      thirdPartyReference:
+        description: Must be 100 characters or less
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: Required for Insurance only. 50 characters or less
+        type: string
+      lastName:
+        description: Required for Insurance only. 50 characters or less
+        type: string
+      addressLine1:
+        description: Must be 100 characters or less
+        type: string
+      addressLine2:
+        description: Must be 100 characters or less
+        type: string
+      addressLine3:
+        description: Must be 100 characters or less
+        type: string
+      addressLine4:
+        description: Must be 100 characters or less
+        type: string
+      postcode:
+        description: Must be 8 characters or less
+        type: string
+      emailAddress:
+        description: Must be 255 characters or less.
+        type: string
+      mobileTelephone:
+        description: Must be 15 characters or less
+        type: string
+      branchTelephone:
+        description: Must be 15 characters or less
+        type: string
+  API.Responses.SchemeRules:
+    description: Model for a new member scheme subscription
+    required:
+      - schemeRulesAccepted
+    type: object
+    properties:
+      url:
+        description: URL of the requested Scheme Rules
+        type: string
+  API.Responses.Batch:
+    type: object
+    properties:
+      batchID:
+        type: string
+        description: Our unique ID for the new batch
+      batchName:
+        type: string
+        description: Your name for the new batch
+  API.Responses.BatchAddTenancy:
+    type: object
+    properties:
+      batchID:
+        type: string
+        description: Our unique ID for this batch of tenancies
+      batchName:
+        type: string
+        description: You name for this batch
+      totalAmountInBatch:
+        format: double
+        type: string
+        description: The total monetary value of the batch of tenancies that you need to send to us via bank transfer
+      status:
+        type: string
+        description: The status of the batch. Can be checked out if "READY_TO_PAY"
+  API.Responses.BatchCheckout:
+    type: object
+    properties:
+      paymentValue:
+        format: double
+        type: string
+        description: The total monetary value of the batch of tenancies that you need to send to us via bank transfer
+      paymentReference:
+        type: string
+        description: The payment reference to use when submitting a bank transfer to us to pay for the batch of tenancies
+      bankAccountNumber:
+        type: string
+        description: The mydeposits bank account number to transfer the payment into
+      bankSortCode:
+        type: string
+        description: The mydeposits bank sort code to transfer the payment into
+  API.Responses.BatchList:
+    type: object
+    properties:
+      batches:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.BatchDetails'
+  API.Responses.IncomingPayment:
+    description: Incoming payment details for a given tenancy
+    type: object
+    properties:
+      tenancyID:
+        type: string
+        description: The ID of the tenancy being queried
+      depositAmount:
+        type: string
+        description: The stated monetary value of the tenancy deposit
+      depositAmountOutstanding:
+        type: string
+        description: The remaining monetary value of the tenancy that is still outstanding to be paid
+      protectionFee:
+        type: string
+        description: Any applicable fee charged for this protection
+      bankAccountNumber:
+        type: string
+        description: The mydeposits bank account number to transfer the payment into
+      bankSortCode:
+        type: string
+        description: The mydeposits bank sort code to transfer the payment into
+      installments:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.IncomingDepositInstallments'
+  API.Responses.IncomingDepositInstallments:
+    description: List of incoming deposit installments for a given incoming payment
+    type: object
+    properties:
+      installmentStatus:
+        type: string
+        description: Status of the installment
+      InstallmentAmount:
+        type: string
+        description: The monetary value of the installment
+      receivedDate:
+        type: string
+        description: The date that the payment was received by mydeposits
+      referenceNumber:
+        type: string
+        description: The unique payment reference to use when submitting a bank transfer to us to pay for the tenancy
+      paymentType:
+        type: string
+        description: The payment type of the installment
+  API.Responses.DefaultPayment:
+    description: Details of the newly set default payment details
+    type: object
+    properties:
+      status:
+        type: string
+        description: Information message - "By changing your default bank account you will not be able to release any deposits for 7 calendar days"
+      nextReleaseDate:
+        description: "Releases cannot be created or updated for 7 days following the changing of default payment details (dd/mm/yyyy)"
+        type: string
+  API.Responses.PaymentDetail:
+    description: ID of the newly added payment detail
+    type: object
+    properties:
+      bacsPaymentDetailsID:
+        description: The unique ID of the payment details record
+        type: string
+      isDefaultPayment:
+        description: Whether this is the default payment method or not, will be either "true" or "false"
+        type: string
+  API.Responses.PaymentDetailsList:
+    type: object
+    properties:
+      paymentDetails:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.PaymentDetails'
+  API.Responses.PaymentDetails:
+    description: Summary of payment details
+    type: object
+    properties:
+      paymentDetailsID:
+        description: The unique ID of the payment details record
+        type: string
+      beneficiaryName:
+        description: The name linked to the bank account
+        type: string
+      bankAccountNumber:
+        type: string
+        description: The bank account number the deposit should be paid into
+      bankSortCode:
+        type: string
+        description: The sort code of the account the deposit should be paid into
+      isDefaultPayment:
+        type: string
+        description: Whether this is the default payment method or not, will be either "true" or "false"
+  API.Responses.Branch:
+    description: Summary of newly created Branch object
+    type: object
+    properties:
+      branchID:
+        description: The unique ID of the branch record
+        type: string
+      thirdPartyReference:
+        type: string
+  API.Responses.BranchList:
+    type: object
+    properties:
+      branchDetails:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.BranchDetails'
+  API.Responses.BranchDetails:
+    description: Summary of branch details
+    type: object
+    properties:
+      branchID:
+        description: The unique ID of the branch record
+        type: string
+      parentBranchID:
+        description: The branch ID (if any) of the parent branch for this record
+        type: string
+      thirdPartyReference:
+        type: string
+      branchName:
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: Required for Insurance only. 50 characters or less
+        type: string
+      lastName:
+        description: Required for Insurance only. 50 characters or less
+        type: string
+      addressLine1:
+        type: string
+      addressLine2:
+        type: string
+      addressLine3:
+        type: string
+      addressLine4:
+        type: string
+      postcode:
+        type: string
+      emailAddress:
+        type: string
+      mobileTelephone:
+        type: string
+      branchTelephone:
+        type: string
+  API.Responses.Unprotect:
+    type: object
+    properties:
+      tenancyID:
+        type: string
+        description: The tenancy ID of the deposit you are unprotecting
+      status:
+        type: string
+        description: Will be either "Awaiting tenant response" for release initiation or countering, or "Deposit released"  for accepting a release request.
+      dateUnprotected:
+        type: string
+        description: The date of the deposit unprotection if no deductions were requested, otherwise todays date
+  API.Responses.Renew:
+    type: object
+    properties:
+      tenancyID:
+        type: string
+        description: The tenancy ID of the deposit you are renewing
+      protectionFee:
+        format: double
+        description: Any outstanding fee needing to be paid before the deposit is protected
+        type: number
+      landlordID:
+        description: The mydeposits member number of the landlord relating to the tenancy
+        type: string
+      propertyID:
+        description: The mydeposits ID of the property that this tenancy is registered against
+        type: string
+      depositAmount:
+        format: double
+        description: The value of the protected deposit
+        type: string
+  API.Responses.ConvertSPT:
+    type: object
+    properties:
+      tenancyID:
+        type: string
+        description: The tenancy ID of the deposit you are converting
+      status:
+        type: string
+        description: Will be "protected"
+      type:
+        type: string
+        description: Will be "Statutory Periodics"
+      sptDate:
+        type: string
+        description: The date that the tenancy was converted to a statutory periodic tenancy (dd/mm/yyyy)
+  API.Responses.Checkout:
+    type: object
+    properties:
+      tenancyID:
+        type: string
+        description: The ID of the tenancy being checked out
+      depositAmount:
+        format: double
+        type: string
+        description: The monetary value of the tenancy that you need to send to us via bank transfer
+      paymentReference:
+        type: string
+        description: The unique payment reference to use when submitting a bank transfer to us to pay for the tenancy
+      protectionFee:
+        format: double
+        type: number
+        description: Any applicable fee charged for this protection
+      bankAccountNumber:
+        type: string
+        description: The mydeposits bank account number to transfer the payment into.
+      bankSortCode:
+        type: string
+        description: The mydeposits bank sort code to transfer the payment into.
+  API.Responses.OTP:
+    type: object
+    properties:
+      communicationMethod:
+        description: Will notify you whether the OTP was sent via email or SMS. Possible values are "EMAIL" or "SMS"
+        type: string
+  API.Responses.Tenancy:
+    description: Details of a newly registered tenancy deposit
+    type: object
+    properties:
+      tenancyID:
+        description: The mydeposits unique tenancy identifier
+        type: string
+      protectionFee:
+        format: double
+        description: Any outstanding fee needing to be paid before the deposit is protected
+        type: number
+      landlordID:
+        description: The mydeposits member number of the landlord relating to the tenancy
+        type: string
+      propertyID:
+        description: The mydeposits ID of the property that this tenancy is registered against
+        type: string
+      depositAmount:
+        format: double
+        description: The value of the protected deposit
+        type: string
+  API.Responses.ProtectionList:
+    type: object
+    properties:
+      protectionList:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.Protection'
+  API.Responses.Protection:
+    description: Summary of tenancy details
+    type: object
+    properties:
+      branchID:
+        description: The branch that the deposit is linked to
+        type: string
+      tenancyID:
+        description: The mydeposits unique ID for this tenancy
+        type: string
+      depositProtectionNumber:
+        description: The certificate number for this tenancy
+        type: string
+      tenancyStartDate:
+        description: The start date of the tenancy
+        type: string
+      tenancyEndDate:
+        description: The end date of the tenancy
+        type: string
+      depositAmount:
+        description: The deposits amount
+        type: string
+      protectedAmount:
+        description: The amount of the deposit to be protected
+        type: string
+      currentStatus:
+          $ref: '#/definitions/TenancyStatus'
+  API.Responses.LandlordMember:
+    type: object
+    properties:
+      memberID:
+        type: string
+      access_token:
+        description: The token to use to when submitting a request
+        type: string
+      token_type:
+        description: The type of token
+        type: string
+      expires_in:
+        description: How long until the token expires
+        type: string
+      refresh_token:
+        description: Used to gain a new token when the access token expires
+        type: string
+  API.Responses.LandlordList:
+    type: object
+    properties:
+      numberofLandlordsFound:
+        type: integer
+      landlords:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.LandlordDetails'
+  API.Responses.LandlordDetails:
+    description: Details of a landlord within a member account
+    type: object
+    properties:
+      landlordType:
+        type: string
+      landlordID:
+        description: mydeposits ID of the landlord
+        type: string
+      thirdPartyReference:
+        description: 'Your unique third party reference, if we have been given one'
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        type: string
+      lastName:
+        type: string
+      addressLine1:
+        type: string
+      addressLine2:
+        type: string
+      addressLine3:
+        type: string
+      addressLine4:
+        type: string
+      postcode:
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      companyName:
+        type: string
+      companyRegistrationNumber:
+        type: string
+      registeredAddressLine1:
+        type: string
+      registeredAddressLine2:
+        type: string
+      registeredAddressLine3:
+        type: string
+      registeredPostcode:
+        type: string
+      homeTelephone:
+        type: string
+      mobileTelephone:
+        type: string
+      workTelephone:
+        type: string
+      emailAddress:
+        type: string
+      branchID:
+        description: The member number for any existing parent branch of the landlord
+        type: string
+  API.Responses.Landlord:
+    type: object
+    properties:
+      landlordID:
+        description: mydeposits landlord ID of the new landlord
+        type: string
+      landlordReference:
+        description: 'Your unique third party reference, if we have been given one'
+        type: string
+  API.Responses.Property:
+    description: Property response object
+    type: object
+    properties:
+      propertyID:
+        description: The mydeposits property ID
+        type: string
+      propertyReference:
+        description: 'Your unique third party reference, if we have been given one'
+        type: string
+  API.Responses.PropertiesList:
+    type: object
+    properties:
+      numberofPropertiesFound:
+        type: integer
+      properties:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.PropertyDetails'
+  API.Responses.PropertyDetails:
+    description: Details of a given property
+    type: object
+    properties:
+      propertyID:
+        type: string
+      thirdPartyReference:
+        type: string
+      addressLine1:
+        type: string
+      addressLine2:
+        type: string
+      addressLine3:
+        type: string
+      addressLine4:
+        type: string
+      postcode:
+        type: string
+      propertyType:
+        $ref: '#/definitions/PropertyType'
+      localAuthority:
+        $ref: '#/definitions/LocalAuthorityRegion'
+      landlordID:
+        type: string
+      branchID:
+        type: string
+  API.Responses.BatchDetails:
+    description: Details of a given batch ID
+    type: object
+    properties:
+      batchID:
+        description: Our unique reference for this batch
+        type: string
+      batchName:
+        description: The name of the batch
+        type: string
+      totalAmountInBatch:
+        description: The current payment balance held within the batch
+        format: double
+        type: string
+      status:
+        description: The status of the batch
+        type: string
+      tenancies:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.BatchTenancy'
+  API.Responses.BatchTenancy:
+    description: Details of a given tenancy within a batch
+    type: object
+    properties:
+      tenancyID:
+        description: Our unique reference for this tenancy
+        type: string
+      amountInBatch:
+        description: The value for this tenancy that will be paid within this batch
+        format: double
+        type: string
+      outstandingBalance:
+        description: The outstanding balance for this tenancy
+        format: double
+        type: string
+      depositAmount:
+        description: The stated deposit amount for this tenancy
+        format: double
+        type: string
+  API.Responses.TenancyDetails:
+    description: Details of a given tenancy ID
+    type: object
+    properties:
+      tenancyID:
+        description: Our unique reference for this tenancy
+        type: string
+      depositProtectionNumber:
+        description: Deposit protection number
+        type: string
+      thirdPartyReference:
+        description: Your unique reference for this tenancy, if we have been given one
+        type: string
+      tenancyType:
+        description: The type of tenancy this deposit is against
+        type: string
+      depositHolder:
+        description: Insurance Only - Agent / Landlord
+        type: string
+      depositAmount:
+        description: Stated value of the deposit, up to 2 decimal places
+        type: string
+      protectedAmount:
+        description: Value of the protected deposit, up to 2 decimal places
+        type: string
+      dateDepositPaid:
+        description: The date the landlord/agent received the deposit (dd/MM/yyyy)
+        type: string
+      tenancyStartDate:
+        description: The date the tenancy started (dd/MM/yyyy)
+        type: string
+      tenancyEndDate:
+        description: The date the tenancy ended (dd/MM/yyyy)
+        type: string
+      annualRentalAmount:
+        type: string
+      landlordRegistrationNumber:
+        description: 'Only needed for Scotland Custodial, landlord registration number for local authority that the property resides in'
+        type: string
+      landlord:
+        $ref: '#/definitions/API.Responses.Landlord'
+      property:
+        $ref: '#/definitions/API.Responses.Property'
+      leadTenant:
+        $ref: '#/definitions/API.Responses.LeadTenant'
+      jointTenants:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.JointTenant'
+      interestedParty:
+        $ref: '#/definitions/API.Responses.InterestedPartyDetails'
+      branchID:
+        type: string
+      currentStatus:
+          $ref: '#/definitions/TenancyStatus'
+  API.Responses.LeadTenant:
+    type: object
+    properties:
+      tenantID:
+        description: The mydeposits tenant ID
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: First name
+        type: string
+      lastName:
+        description: Last name
+        type: string
+      addressLine1:
+        type: string
+      addressLine2:
+        type: string
+      addressLine3:
+        type: string
+      addressLine4:
+        type: string
+      postcode:
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      emailAddress:
+        type: string
+      mobileTelephone:
+        type: string
+      workTelephone:
+        type: string
+      homeTelephone:
+        type: string
+  API.Responses.JointTenant:
+    type: object
+    properties:
+      tenantID:
+        description: The mydeposits tenant ID
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        description: First name
+        type: string
+      lastName:
+        description: Last name
+        type: string
+      addressLine1:
+        type: string
+      addressLine2:
+        type: string
+      addressLine3:
+        type: string
+      addressLine4:
+        type: string
+      postcode:
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      emailAddress:
+        type: string
+      mobileTelephone:
+        type: string
+      workTelephone:
+        type: string
+      homeTelephone:
+        type: string
+  API.Responses.InterestedPartyDetails:
+    type: object
+    properties:
+      interestedPartyID:
+        type: string
+      title:
+        $ref: '#/definitions/Title'
+      firstName:
+        type: string
+      lastName:
+        type: string
+      companyName:
+        type: string
+      addressLine1:
+        type: string
+      addressLine2:
+        type: string
+      addressLine3:
+        type: string
+      addressLine4:
+        type: string
+      postcode:
+        type: string
+      countryCode:
+        $ref: '#/definitions/Country'
+      emailAddress:
+        type: string
+      mobileTelephone:
+        type: string
+      workTelephone:
+        type: string
+      homeTelephone:
+        type: string
+  API.Responses.ErrorList:
+    type: object
+    properties:
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/API.Responses.Errors'
+  API.Responses.Errors:
+    type: object
+    properties:
+      fieldName:
+        description: The affected field
+        type: string
+      errorMessage:
+        description: The error message
+        type: string
+  API.Responses.Token:
+    type: object
+    properties:
+      access_token:
+        description: The token to use to when submitting a request
+        type: string
+      token_type:
+        description: The type of token
+        type: string
+      expires_in:
+        description: How long until the token expires
+        type: string
+      refresh_token:
+        description: Used to gain a new token when the access token expires
+        type: string
+  TenancyType:
+    description: The type of tenancy this is for - PRIVATE_RESIDENTIAL is for Scotland only, and also the only value allowed for Scotland
+    type: string
+    enum: &TenancyType
+      - ASSURED_SHORTHOLD
+      - NON_ASSURED_SHORTHOLD
+      - COMPANY_LET
+      - PRIVATE_RESIDENTIAL
+  TenancyStatus:
+    description: A set of possible tenancy statuses
+    type: string
+    enum: &TenancyStatus
+      - registered
+      - awaiting payment
+      - protected awaiting payment (insurance only)
+      - protected
+      - release initiated (custodial only)
+      - unprotected
+      - release in dispute
+      - release in court
+      - cancelled
+      - closed
+      - cheque bounced
+  PropertyType:
+    description: The type of property - Custodial only
+    type: string
+    enum: &PropertyType
+      - HOUSE
+      - FLAT
+      - MAISONETTE
+      - ROOM
+  DeductionReasons:
+    description: Reasons for requesting to withold part of the deposit during a release
+    type: string
+    enum: &DeductionReasons
+      - CLEANING
+      - GARDEN_MAINTENANCE
+      - MISSING_ITEMS
+      - REDECORATION
+      - RENT_ARREARS
+      - REPAIRS
+      - UNPAID_BILLS
+      - OTHERS
+  Title:
+    description: The title for this entity
+    type: string
+    enum: &Title
+      - Mr
+      - Mrs
+      - Miss
+      - Ms
+      - Dr
+      - Lady
+      - Lord
+      - Professor
+      - Sir
+      - Mx
+  LocalAuthorityRegion:
+    description: Scotland Custodial only, the local authority the property resides in
+    type: string
+    enum: &LocalAuthority
+      - AberdeenCity,
+      - Aberdeenshire,
+      - Angus,
+      - ArgyllAndBute,
+      - Clackmannanshire,
+      - DumfriesAndGalloway,
+      - DundeeCity,
+      - EastAyrshire,
+      - EastDunbartonshire,
+      - EastLothian,
+      - EastRenfrewshire,
+      - Edinburgh,
+      - EileanSiar,
+      - Falkirk,
+      - Fife,
+      - GlasgowCity,
+      - Highland,
+      - Inverclyde,
+      - Midlothian,
+      - Moray,
+      - NorthAyrshire,
+      - NorthLanarkshire,
+      - OrkneyIslands,
+      - PerthAndKinross,
+      - Renfrewshire,
+      - ScottishBorders,
+      - ShetlandIslands,
+      - SouthAyrshire,
+      - SouthLanarkshire,
+      - Stirling,
+      - WestDunbartonshire,
+      - WestLothian
+  Country:
+    description: 2 digit ISO country code
+    type: string
+    enum: &Country
+      - AD
+      - AE
+      - AF
+      - AG
+      - AI
+      - AL
+      - AM
+      - AN
+      - AO
+      - AQ
+      - AR
+      - AS
+      - AT
+      - AU
+      - AW
+      - AZ
+      - BA
+      - BB
+      - BD
+      - BE
+      - BF
+      - BG
+      - BH
+      - BI
+      - BJ
+      - BM
+      - BN
+      - BO
+      - BR
+      - BS
+      - BT
+      - BV
+      - BW
+      - BY
+      - BZ
+      - CA
+      - CC
+      - CD
+      - CF
+      - CG
+      - CH
+      - CI
+      - CK
+      - CL
+      - CM
+      - CN
+      - CO
+      - CR
+      - CU
+      - CV
+      - CX
+      - CY
+      - CZ
+      - DE
+      - DJ
+      - DK
+      - DM
+      - DO
+      - DZ
+      - EC
+      - EE
+      - EG
+      - EH
+      - ES
+      - ET
+      - FI
+      - FJ
+      - FK
+      - FM
+      - FO
+      - FR
+      - GA
+      - GB
+      - GD
+      - GE
+      - GF
+      - GG
+      - GH
+      - GI
+      - GL
+      - GM
+      - GN
+      - GP
+      - GQ
+      - GR
+      - GT
+      - GU
+      - GW
+      - GY
+      - HK
+      - HM
+      - HN
+      - HR
+      - HT
+      - HU
+      - ID
+      - IE
+      - IL
+      - IM
+      - IN
+      - IO
+      - IQ
+      - IR
+      - IS
+      - IT
+      - JE
+      - JM
+      - JO
+      - JP
+      - KE
+      - KG
+      - KH
+      - KI
+      - KM
+      - KN
+      - KP
+      - KR
+      - KS
+      - KW
+      - KY
+      - KZ
+      - LA
+      - LB
+      - LC
+      - LI
+      - LK
+      - LR
+      - LS
+      - LT
+      - LU
+      - LV
+      - LY
+      - MA
+      - MC
+      - MD
+      - ME
+      - MG
+      - MH
+      - MK
+      - ML
+      - MM
+      - MN
+      - MO
+      - MP
+      - MQ
+      - MR
+      - MS
+      - MT
+      - MU
+      - MV
+      - MW
+      - MX
+      - MY
+      - MZ
+      - NA
+      - NC
+      - NE
+      - NF
+      - NG
+      - NI
+      - NL
+      - NO
+      - NP
+      - NR
+      - NT
+      - NU
+      - NZ
+      - OM
+      - PA
+      - PE
+      - PF
+      - PG
+      - PH
+      - PK
+      - PL
+      - PM
+      - PN
+      - PR
+      - PS
+      - PT
+      - PW
+      - PY
+      - PZ
+      - QA
+      - RE
+      - RO
+      - RS
+      - RU
+      - RW
+      - SA
+      - SB
+      - SC
+      - SD
+      - SE
+      - SG
+      - SH
+      - SI
+      - SJ
+      - SK
+      - SL
+      - SM
+      - SN
+      - SO
+      - SR
+      - ST
+      - SV
+      - SY
+      - SZ
+      - TC
+      - TD
+      - TF
+      - TG
+      - TH
+      - TJ
+      - TK
+      - TM
+      - TN
+      - TO
+      - TP
+      - TR
+      - TT
+      - TV
+      - TW
+      - TZ
+      - UA
+      - UG
+      - UM
+      - US
+      - UY
+      - UZ
+      - VA
+      - VC
+      - VE
+      - VG
+      - VI
+      - VN
+      - VU
+      - WF
+      - WS
+      - YE
+      - YU
+      - ZA
+      - ZM
+      - ZR
+      - ZW
+securityDefinitions:
+  mydeposits_accessCode:
+    type: oauth2
+    tokenUrl: https://api.sandbox.mydeposits.co.uk/v1/{scheme}/eng/token
+    authorizationUrl: https://api.sandbox.mydeposits.co.uk/v1/{scheme}/eng/authorize
+    flow: accessCode
+    scopes:
+      write:mydeposits: modify mydeposits entities in your account
+      read:mydeposits: read your mydeposits entities
+  mydeposits_implicit:
+    type: oauth2
+    flow: password
+    tokenUrl: https://api.sandbox.mydeposits.co.uk/v1/{scheme}/eng/token?
+
+schemes:
+- https
+host: api.sandbox.mydeposits.co.uk
+basePath: /
